@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from mangum import Mangum
 
-from app.api import items
+# from app.api import items
 
 app = FastAPI(title="Pyjaapp Backend API")
 
-app.include_router(items.router, prefix="/api/v1")
+# app.include_router(items.router, prefix="/api/v1")
 
 
 @app.get("/")
