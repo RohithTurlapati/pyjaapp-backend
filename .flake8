@@ -1,0 +1,6 @@
+[flake8]
+# Align max-line-length with Black's default 88 character limit
+max-line-length = 88
+
+# Extend ignore to be compatible with Black's formatting style
+extend-ignore = E203, W503
