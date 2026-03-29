@@ -5,6 +5,15 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    # You must create this bucket and DynamoDB table MANUALLY in AWS first!
+    bucket         = "pyjaapp-terraform-state-backend"
+    key            = "state/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "pyjaapp-terraform-locks"
+    encrypt        = true
+  }
 }
 
 provider "aws" {
@@ -15,39 +24,9 @@ locals {
   name_prefix = "${var.app_name}-${var.environment}"
 }
 
-# --- Cognito ---
-resource "aws_cognito_user_pool" "pool" {
-  name = "${local.name_prefix}-users"
-
-  password_policy {
-    minimum_length    = 8
-    require_lowercase = true
-    require_numbers   = true
-    require_symbols   = true
-    require_uppercase = true
-  }
-
-  username_attributes = ["email"]
-  auto_verified_attributes = ["email"]
-}
-
-resource "aws_cognito_user_pool_client" "client" {
-  name         = "${local.name_prefix}-client"
-  user_pool_id = aws_cognito_user_pool.pool.id
-  generate_secret = false
-  explicit_auth_flows = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
-}
-
-# --- DynamoDB ---
-resource "aws_dynamodb_table" "items" {
-  name           = "${local.name_prefix}-items"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
-
-  attribute {
-    name = "id"
-    type = "S"
-  }
+resource "random_password" "jwt_secret" {
+  length  = 32
+  special = false
 }
 
 # --- S3 ---
@@ -74,11 +53,6 @@ resource "aws_iam_policy" "lambda_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      {
-        Action = ["dynamodb:*"]
-        Effect = "Allow"
-        Resource = aws_dynamodb_table.items.arn
-      },
       {
         Action = ["s3:*"]
         Effect = "Allow"
@@ -113,11 +87,10 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      ENV                  = var.environment
-      DYNAMODB_TABLE_NAME  = aws_dynamodb_table.items.name
-      S3_BUCKET_NAME       = aws_s3_bucket.assets.id
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.pool.id
-      COGNITO_APP_CLIENT_ID= aws_cognito_user_pool_client.client.id
+      ENV            = var.environment
+      S3_BUCKET_NAME = aws_s3_bucket.assets.id
+      DATABASE_URL   = var.supabase_db_url
+      JWT_SECRET_KEY = random_password.jwt_secret.result
     }
   }
 }
@@ -162,12 +135,4 @@ resource "aws_lambda_permission" "api_gw" {
 
 output "api_gateway_url" {
   value = aws_apigatewayv2_stage.lambda.invoke_url
-}
-
-output "cognito_user_pool_id" {
-  value = aws_cognito_user_pool.pool.id
-}
-
-output "cognito_client_id" {
-  value = aws_cognito_user_pool_client.client.id
 }

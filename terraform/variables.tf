@@ -13,3 +13,9 @@ variable "environment" {
   description = "Deployment environment (e.g., dev, prod)"
   type        = string
 }
+
+variable "supabase_db_url" {
+  description = "The database URL from Supabase"
+  type        = string
+  sensitive   = true
+}

@@ -3,13 +3,15 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     env: str = "dev"
-    dynamodb_table_name: str = "pyjaapp-dev-items"
     s3_bucket_name: str = "pyjaapp-dev-assets"
-    cognito_user_pool_id: str = ""
-    cognito_app_client_id: str = ""
+    database_url: str = "postgresql+asyncpg://appuser:testpass@localhost:5432/postgres"
+    jwt_secret_key: str = "supersecretkey"
+    jwt_algorithm: str = "HS256"
+    google_client_id: str = ""
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()
