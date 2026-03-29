@@ -81,7 +81,7 @@ resource "aws_lambda_function" "api" {
   filename      = "../lambda_function.zip"
   source_code_hash = fileexists("../lambda_function.zip") ? filebase64sha256("../lambda_function.zip") : null
   handler       = "app.main.handler"
-  runtime       = "python3.10"
+  runtime       = "python3.12"
   role          = aws_iam_role.lambda_exec.arn
   timeout       = 15
 
