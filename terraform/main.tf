@@ -7,11 +7,11 @@ terraform {
   }
 
   backend "s3" {
-    # You must create this bucket and DynamoDB table MANUALLY in AWS first!
+    # You must create this bucket MANUALLY in AWS first!
     bucket         = "pyjaapp-terraform-state-backend"
     key            = "state/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "pyjaapp-terraform-locks"
+    region         = "eu-north-1" # Updated to match your actual bucket location
+    use_lockfile   = true         # Modern terraform way, replaces dynamodb
     encrypt        = true
   }
 }
