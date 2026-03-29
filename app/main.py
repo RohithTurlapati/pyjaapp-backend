@@ -1,22 +1,22 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from mangum import Mangum
 
 from app.core.database import Base, engine
 from app.routers import auth
 
+app = FastAPI(title="Pyjaapp Backend API")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # In development, create tables automatically on startup
+
+@app.get("/api/dev/init-db", tags=["dev"])
+async def init_db():
+    """
+    Helper endpoint to safely create tables in Production
+    without crashing Lambdas on startup.
+    """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield
-    await engine.dispose()
+    return {"message": "Database tables created successfully!"}
 
-
-app = FastAPI(title="Pyjaapp Backend API", lifespan=lifespan)
 
 app.include_router(auth.router, prefix="/api/auth")
 
