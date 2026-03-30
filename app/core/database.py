@@ -2,6 +2,7 @@ from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -22,7 +23,10 @@ if (
     joiner = "&" if "?" in db_url else "?"
     db_url += f"{joiner}ssl=require"
 
-engine = create_async_engine(db_url, echo=False)
+
+engine = create_async_engine(
+    db_url, echo=False, poolclass=NullPool, connect_args={"statement_cache_size": 0}
+)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine, class_=AsyncSession, expire_on_commit=False
