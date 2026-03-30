@@ -19,3 +19,9 @@ variable "supabase_db_url" {
   type        = string
   sensitive   = true
 }
+
+variable "google_client_id" {
+  description = "Google Auth Client ID"
+  type        = string
+  sensitive   = true
+}

@@ -56,4 +56,4 @@ jobs:
           terraform workspace select $WORKSPACE || terraform workspace new $WORKSPACE
 
           # Apply infrastructure specific to the workspace
-          terraform apply -auto-approve -var="app_name=pyjaapp-backend" -var="environment=$WORKSPACE" -var="supabase_db_url=${{ secrets.SUPABASE_DB_URL }}"
+          terraform apply -auto-approve -var="app_name=pyjaapp-backend" -var="environment=$WORKSPACE" -var="supabase_db_url=${{ secrets.SUPABASE_DB_URL }}" -var="google_client_id=${{ secrets.GOOGLE_CLIENT_ID }}"
