@@ -1,10 +1,19 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from app.core.database import Base, engine
 from app.routers import auth
 
 app = FastAPI(title="Pyjaapp Backend API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
 
 
 @app.get("/api/dev/init-db", tags=["dev"])
