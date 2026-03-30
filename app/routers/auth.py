@@ -115,6 +115,6 @@ async def google_auth(
     }
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/", response_model=UserResponse)
 async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
     return current_user
