@@ -21,7 +21,7 @@ class GoogleAuthRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    requires_background: bool = False
+    requires_password: bool = False
 
 
 class UserResponse(BaseModel):
@@ -32,3 +32,27 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProfileUpdateRequest(BaseModel):
+    password: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    newPassword: str
+
+
+class ChangePasswordRequest(BaseModel):
+    email: EmailStr
+    oldPassword: str
+    newPassword: str

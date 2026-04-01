@@ -26,6 +26,11 @@ async def get_current_user(
         payload = jwt.decode(
             token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
         )
+        if payload.get("scope") == "password_reset":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Reset tokens cannot be used for normal authentication",
+            )
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
@@ -38,4 +43,50 @@ async def get_current_user(
 
     if user is None:
         raise credentials_exception
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled due to too many failed attempts.",
+        )
+    return user
+
+
+async def get_reset_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate reset credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
+        if payload.get("scope") != "password_reset":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid token scope for password reset",
+            )
+        user_id: str | None = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise credentials_exception
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled due to too many failed attempts.",
+        )
+
     return user

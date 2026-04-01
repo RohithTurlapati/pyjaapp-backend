@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -8,10 +8,8 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "supersecretkey"
     jwt_algorithm: str = "HS256"
     google_client_id: str = ""
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    resend_api_key: str = ""
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()
