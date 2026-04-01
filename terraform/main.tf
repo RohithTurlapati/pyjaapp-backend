@@ -87,11 +87,12 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      ENV            = var.environment
+      ENV              = var.environment
       S3_BUCKET_NAME   = aws_s3_bucket.assets.id
       DATABASE_URL     = var.supabase_db_url
       JWT_SECRET_KEY   = random_password.jwt_secret.result
       GOOGLE_CLIENT_ID = var.google_client_id
+      RESEND_API_KEY   = var.resend_api_key
     }
   }
 }

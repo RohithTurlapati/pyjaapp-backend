@@ -77,6 +77,12 @@ async def login(data: UserLoginRequest, db: Annotated[AsyncSession, Depends(get_
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
+    if user and user.locked_until and user.locked_until > datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is temporarily locked. Please try again later.",
+        )
+
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -214,6 +220,9 @@ async def forgot_password(
         return success_msg
 
     now = datetime.now(timezone.utc)
+    if user.locked_until and user.locked_until > now:
+        return success_msg
+
     one_hour_ago = now - timedelta(hours=1)
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -275,6 +284,14 @@ async def verify_otp(
         )
 
     now = datetime.now(timezone.utc)
+    if user.locked_until and user.locked_until > now:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Account is temporarily locked due to failed attempts. "
+                "Please login or try again after 1 hour."
+            ),
+        )
 
     # Get the latest un-expired OTP requested by this user
     otp_stmt = (
@@ -294,16 +311,29 @@ async def verify_otp(
         user.failed_login_streak += 1
         if user.failed_login_streak >= 27:
             user.is_active = False  # Soft delete / account lock
-        db.add(user)
 
         if otp_record:
             otp_record.failed_attempts += 1
+            if otp_record.failed_attempts >= 3:
+                user.locked_until = now + timedelta(hours=1)
+                otp_record.used = True  # Invalidate this OTP immediately
             db.add(otp_record)
 
+        db.add(user)
         await db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP"
-        )
+
+        if otp_record and otp_record.failed_attempts >= 3:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Too many incorrect OTP attempts. "
+                    "Please login or try again after 1 hour."
+                ),
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP"
+            )
 
     # Success
     user.failed_login_streak = 0

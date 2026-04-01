@@ -31,6 +31,9 @@ class User(Base):
     last_password_change: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Store profiles, backgrounds, URLs in this JSONB column
     profile_data: Mapped[dict[str, Any] | None] = mapped_column(
