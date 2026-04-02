@@ -1,21 +1,41 @@
+import asyncio
 import logging
-
-import resend
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-if settings.resend_api_key:
-    resend.api_key = settings.resend_api_key
+
+def sync_send_smtp_email(to_email: str, subject: str, html_content: str) -> bool:
+    """
+    Synchronous helper to send email via SMTP.
+    """
+    msg = MIMEMultipart()
+    msg["From"] = settings.mail_from
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(html_content, "html"))
+
+    try:
+        with smtplib.SMTP(settings.mail_server, settings.mail_port) as server:
+            server.starttls()  # Secure the connection
+            server.login(settings.mail_username, settings.mail_password)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        logger.error(f"SMTP error sending to {to_email}: {str(e)}")
+        return False
 
 
 async def send_otp_email(to_email: str, otp_code: str) -> bool:
     """
     Sends a 6-digit OTP code to the requested email.
-    In local dev (if no RESEND_API_KEY is found), it prints the OTP to the console.
+    In local dev (if no MAIL_PASSWORD is found), it prints the OTP to the console.
     """
-    if not settings.resend_api_key:
+    if not settings.mail_password:
         print("\n" + "=" * 50)
         print("MOCK DEV EMAIL DISPATCH")
         print(f"To: {to_email}")
@@ -38,21 +58,11 @@ async def send_otp_email(to_email: str, otp_code: str) -> bool:
     </div>
     """
 
-    try:
-        # Note: In Resend free-tier sandbox, you can ONLY send emails to the exact same
-        # domain/email address that verified the sender! Keep this in mind!
-        response = resend.Emails.send(
-            {
-                "from": "Acme <onboarding@resend.dev>",
-                "to": [to_email],
-                "subject": "Your Password Reset Code",
-                "html": html_content,
-            }
-        )
-        logger.info(f"Resend dispatched OTP to {to_email}. ID: {response.get('id')}")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to send resend email to {to_email}: {str(e)}")
-        # In production we might not want to throw a 500, but rather return False
-        # so the router can throw a specific 502 Bad Gateway.
-        return False
+    # Run the blocking SMTP call in a separate thread to keep FastAPI responsive
+    success = await asyncio.to_thread(
+        sync_send_smtp_email, to_email, "Your Password Reset Code", html_content
+    )
+
+    if success:
+        logger.info(f"SMTP dispatched OTP to {to_email}")
+    return success

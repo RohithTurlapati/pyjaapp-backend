@@ -8,7 +8,11 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "supersecretkey"
     jwt_algorithm: str = "HS256"
     google_client_id: str = ""
-    resend_api_key: str = ""
+    mail_username: str = ""
+    mail_password: str = ""
+    mail_from: str = "Pyjaapp <pyjaapp@gmail.com>"
+    mail_port: int = 587
+    mail_server: str = "smtp.gmail.com"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

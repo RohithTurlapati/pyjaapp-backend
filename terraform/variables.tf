@@ -26,8 +26,14 @@ variable "google_client_id" {
   sensitive   = true
 }
 
-variable "resend_api_key" {
-  description = "Resend API Key for sending emails"
+variable "mail_username" {
+  description = "Mail Username (e.g. Gmail address)"
+  type        = string
+  sensitive   = true
+}
+
+variable "mail_password" {
+  description = "Mail Password (e.g. Gmail App Password)"
   type        = string
   sensitive   = true
 }

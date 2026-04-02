@@ -92,7 +92,8 @@ resource "aws_lambda_function" "api" {
       DATABASE_URL     = var.supabase_db_url
       JWT_SECRET_KEY   = random_password.jwt_secret.result
       GOOGLE_CLIENT_ID = var.google_client_id
-      RESEND_API_KEY   = var.resend_api_key
+      MAIL_USERNAME    = var.mail_username
+      MAIL_PASSWORD    = var.mail_password
     }
   }
 }
